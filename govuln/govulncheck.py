@@ -1,8 +1,12 @@
 import argparse
 import dataclasses
 import json
+import os
 import subprocess
 from typing import Generator
+
+from packaging.version import Version
+import sys
 
 
 class Table:
@@ -46,42 +50,42 @@ class Affected:
         return f'{self.package} Introduced:{self.introduced} Fixed:{self.fixed}'
 
 
-class Version:
-    def __init__(self, v: str):
-        try:
-            v = str(v)
-            if v.startswith('v'):
-                v = v[1:]
-            elif v.startswith('go'):
-                v = v[2:]
-            parts = v.split('-', 1)
-            self.extra = parts[1] if len(parts) > 1 else ''
-            values = parts[0].split('.')
-            self.major = int(values[0]) if values[0].isnumeric() else values[0]
-            self.minor = int(values[1]) if values[1].isnumeric() else values[1]
-            if len(values) > 2:
-                self.patch = int(values[2]) if values[2].isnumeric() else values[2]
-            else:
-                self.patch = 0
-        except Exception:
-            self.major = 0
-            self.minor = 0
-            self.patch = 0
+# class Version:
+#     def __init__(self, v: str):
+#         try:
+#             v = str(v)
+#             if v.startswith('v'):
+#                 v = v[1:]
+#             elif v.startswith('go'):
+#                 v = v[2:]
+#             parts = v.split('-', 1)
+#             self.extra = parts[1] if len(parts) > 1 else ''
+#             values = parts[0].split('.')
+#             self.major = int(values[0]) if values[0].isnumeric() else values[0]
+#             self.minor = int(values[1]) if values[1].isnumeric() else values[1]
+#             if len(values) > 2:
+#                 self.patch = int(values[2]) if values[2].isnumeric() else values[2]
+#             else:
+#                 self.patch = 0
+#         except Exception:
+#             self.major = 0
+#             self.minor = 0
+#             self.patch = 0
 
-    def __lt__(self, other):
-        if not isinstance(other, Version):
-            return NotImplemented
-        return (self.major, self.minor, self.patch, self.extra) < (
-            other.major,
-            other.minor,
-            other.patch,
-            self.extra,
-        )
+#     def __lt__(self, other):
+#         if not isinstance(other, Version):
+#             return NotImplemented
+#         return (self.major, self.minor, self.patch, self.extra) < (
+#             other.major,
+#             other.minor,
+#             other.patch,
+#             self.extra,
+#         )
 
-    def __repr__(self):
-        return f'{self.major}.{self.minor}.{self.patch}' + (
-            '' if not self.extra else f'-{self.extra}'
-        )
+#     def __repr__(self):
+#         return f'{self.major}.{self.minor}.{self.patch}' + (
+#             '' if not self.extra else f'-{self.extra}'
+#         )
 
 
 class OSV:
@@ -137,6 +141,9 @@ def _run_command(*command):
 
 
 def _check_dependencies() -> bool:
+    if not os.path.isfile('go.mod'):
+        print('missing go.mod file')
+        return False
     # Check govulncheck
     rc, output = _run_command('govulncheck', '-json')
     if rc == 0:
@@ -246,4 +253,4 @@ def main():
 
 
 if __name__ == '__main__':
-    raise SystemExit(main())
+    sys.exit(main())
