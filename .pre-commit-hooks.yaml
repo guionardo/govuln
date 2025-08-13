@@ -1,5 +1,5 @@
 - id: go-vulncheck
-  name: check for golang vulnerabilities
+  name: Check for golang vulnerabilities
   description: prevents vulnerabilities from being committed.
   entry: go-vulncheck
   language: python
@@ -9,7 +9,7 @@
   always_run: true
 
 - id: go-vulncheck-just-warn
-  name: check for golang vulnerabilities
+  name: Check for golang vulnerabilities [just-warn]
   description: prevents vulnerabilities from being committed.
   entry: go-vulncheck --just-warn
   language: python
