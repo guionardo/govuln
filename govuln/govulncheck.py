@@ -6,7 +6,7 @@ import subprocess
 import sys
 from typing import Tuple
 
-from internals import Internal
+from .internals import Internal
 
 
 class Table:
