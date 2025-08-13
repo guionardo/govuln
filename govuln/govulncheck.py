@@ -3,10 +3,8 @@ import dataclasses
 import json
 import os
 import subprocess
-from typing import Generator
-
-# from packaging.version import Version
 import sys
+from typing import Tuple
 
 
 class Table:
@@ -131,79 +129,114 @@ class SBOM:
                     self.package = path
 
 
-def _run_command(*command):
-    result = subprocess.run(command, capture_output=True, check=False)
-    output = (str(result.stderr) if result.returncode else '') + str(result.stdout)
-    if result.returncode != 0:
-        print(f'Running command "{command}" resulted {result.returncode}')
+class GoVulnCheck:
+    def __init__(self, just_warn: bool = False):
+        self.sbom: SBOM = None
+        self.osvs: list[OSV] = []
+        self.just_warn = just_warn
 
-    return result.returncode, output
+    def summary(self):
+        if not self.osvs:
+            return
 
+    def call(self) -> bool:
+        if not (self.check_dependencies() and self.run_vulncheck()):
+            return False
 
-def _check_dependencies() -> bool:
-    if not os.path.isfile('go.mod'):
-        print('missing go.mod file')
+        if not self.osvs:
+            return True
+
+        affected = dict()
+        for osv in self.osvs:
+            for af in osv.affected.values():
+                fixed = Version(af.fixed)
+                package = affected.setdefault(
+                    af.package, dict(package=af.package, fixed=fixed, vulns=[])
+                )
+                package['vulns'].append(osv)
+                if package['fixed'] < fixed:
+                    package['fixed'] = fixed
+
+        table = Table('Affected packages', 'Current', 'Fixed', 'Package')
+        for package, data in affected.items():
+            if not (cur_version := self.sbom.modules.get(package)):
+                continue
+            if cur_version < data['fixed']:
+                table.write(str(cur_version), str(data['fixed']), package)
+
+        table.print()
+        print('\nℹ️  Run "govulncheck ./..." for more details')
         return False
-    # Check govulncheck
-    rc, output = _run_command('govulncheck', '-json')
-    if rc == 0:
+
+    def __call__(self) -> int:
+        if self.call():
+            return 0
+        if self.just_warn:
+            print('\n⚠️  Just a warning. The commit will not be blocked.')
+            return 0
+        return 1
+
+    def _run_command(self, *command) -> Tuple[int, str]:
+        result = subprocess.run(command, capture_output=True, check=False)
+        output = (
+            result.stderr.decode('utf-8') if result.returncode else ''
+        ) + result.stdout.decode('utf-8')
+        if result.returncode != 0:
+            print(f'Running command "{command}" resulted {result.returncode}')
+        return result.returncode, output
+
+    def check_dependencies(self) -> bool:
+        """Checks if go.mod exists and govulncheck is available"""
+        if not os.path.isfile('go.mod'):
+            print('missing go.mod file')
+            return False
+        # Check govulncheck
+        rc, _ = self._run_command('govulncheck', '-json')
+        if rc == 0:
+            return True
+
+        # Try install govulncheck
+        cmd = ('go', 'install', 'golang.org/x/vuln/cmd/govulncheck@latest')
+        rc, output = self._run_command(*cmd)
+        if rc == 0:
+            return True
+        print('Error installing govulncheck: ', ' '.join(cmd))
+        print(output)
+        return False
+
+    def run_vulncheck(self) -> bool:
+        """Runs govulncheck and parses data. Returns false if there are any execution error"""
+        rc, output = self._run_command('govulncheck', '-json', './...')
+        if rc:
+            print('Error running govulncheck: ', rc, output)
+            return False
+        body = ''
+        for line in output.splitlines():
+            if line.startswith('{'):
+                body = line
+            elif line.startswith('}'):
+                body += line
+                if error := self.parse(body):
+                    print('Error parsing govulncheck: ', error)
+                    return False
+                body = ''
+            else:
+                body += line
         return True
 
-    # Try install govulncheck
-    cmd = ('go', 'install', 'golang.org/x/vuln/cmd/govulncheck@latest')
-    rc, output = _run_command(*cmd)
-    if rc == 0:
-        return True
-    print('Error installing govulncheck: ', ' '.join(cmd))
-    print(output)
-
-
-def _run_vulncheck() -> Generator[str, None, None]:
-    cmd = ['govulncheck', '-json', './...']
-    print('Running govulncheck')
-    popen = subprocess.Popen(cmd, stdout=subprocess.PIPE, universal_newlines=True)
-    for stdout_line in iter(popen.stdout.readline, ''):
-        yield stdout_line
-    popen.stdout.close()
-    return_code = popen.wait()
-    if return_code:
-        raise subprocess.CalledProcessError(return_code, cmd)
-
-
-def parse_key(key, value, osvs: list[OSV]):
-    global sbom
-    if key == 'osv':
-        osvs.append(OSV(value))
-    elif key == 'SBOM':
-        sbom = SBOM(value)
-
-
-def parse(body, osvs):
-    try:
-        field = json.loads(body)
-        if isinstance(field, dict) and len(field) == 1:
+    def parse(self, body) -> str:
+        try:
+            field = json.loads(body)
+            if not (isinstance(field, dict) and len(field) == 1):
+                return ''
             key = list(field.keys())[0]
-            value = field[key]
-            parse_key(key, value, osvs)
-
-    except Exception:
-        pass  # TODO: Tratar erro no parsing
-
-
-def run(osvs):
-    body = ''
-    for line in _run_vulncheck():
-        if line.startswith('{'):
-            body = line
-        elif line.startswith('}'):
-            body += line
-            parse(body, osvs)
-            body = ''
-        else:
-            body += line
-
-
-sbom: SBOM = None
+            if key == 'osv':
+                self.osvs.append(OSV(field[key]))
+            elif key == 'SBOM':
+                self.sbom = SBOM(field[key])
+            return ''
+        except Exception as exc:
+            return str(exc)
 
 
 def main():
@@ -216,40 +249,8 @@ def main():
     )
 
     args = parser.parse_args()
-
-    if not _check_dependencies():
-        return 1
-
-    osvs: list[OSV] = []
-    run(osvs)
-    affected = dict()
-    if not osvs:
-        return 0
-
-    for osv in osvs:
-        for af in osv.affected.values():
-            fixed = Version(af.fixed)
-            package = affected.setdefault(
-                af.package, dict(package=af.package, fixed=fixed, vulns=[])
-            )
-            package['vulns'].append(osv)
-            if package['fixed'] < fixed:
-                package['fixed'] = fixed
-
-    table = Table('Affected packages', 'Current', 'Fixed', 'Package')
-    for package, data in affected.items():
-        if not (cur_version := sbom.modules.get(package)):
-            continue
-        if cur_version < data['fixed']:
-            table.write(str(cur_version), str(data['fixed']), package)
-
-    table.print()
-    print('\nRun "govulncheck -json ./..." for more details')
-
-    if args.just_warn:
-        print('\nJust warning, not blocking the commit')
-        return 0
-    return 1
+    govuln = GoVulnCheck(args.just_warn)
+    return govuln()
 
 
 if __name__ == '__main__':
