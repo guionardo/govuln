@@ -9,11 +9,17 @@ Just add this to your .pre-commit-config.yaml file:
 ```yaml
 repos:
     - repo: https://github.com/guionardo/govuln
-      rev: v0.0.1
+      rev: v0.0.5
       hooks:
           - id: go-vulncheck
-            args: [ --just-warn ]
-
 ```
 
-You can use the argument `--just-warn` to show some vulnerability without block the commit.
+If you don't want to block the commit when some vulnerability is found, use this hook:
+
+```yaml
+repos:
+    - repo: https://github.com/guionardo/govuln
+      rev: v0.0.5
+      hooks:
+          - id: go-vulncheck-just-warn
+```

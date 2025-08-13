@@ -1,9 +1,19 @@
--   id: go-vulncheck
-    name: check for golang vulnerabilities
-    description: prevents vulnerabilities from being committed.
-    entry: go-vulncheck
-    language: python
-    stages: [pre-commit, pre-push, manual]
-    minimum_pre_commit_version: 3.2.0
-    pass_filenames: false
-    always_run: true
+- id: go-vulncheck
+  name: check for golang vulnerabilities
+  description: prevents vulnerabilities from being committed.
+  entry: go-vulncheck
+  language: python
+  stages: [pre-commit, pre-push, manual]
+  minimum_pre_commit_version: 3.2.0
+  pass_filenames: false
+  always_run: true
+
+- id: go-vulncheck-just-warn
+  name: check for golang vulnerabilities
+  description: prevents vulnerabilities from being committed.
+  entry: go-vulncheck --just-warn
+  language: python
+  stages: [pre-commit, pre-push, manual]
+  minimum_pre_commit_version: 3.2.0
+  pass_filenames: false
+  always_run: true

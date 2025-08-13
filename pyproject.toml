@@ -9,4 +9,3 @@ dependencies = [
 ]
 [project.scripts]
 go-vulncheck = "govuln.govulncheck:main"
-    
