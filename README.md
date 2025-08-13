@@ -9,7 +9,7 @@ Just add this to your .pre-commit-config.yaml file:
 ```yaml
 repos:
     - repo: https://github.com/guionardo/govuln
-      rev: v0.0.5
+      rev: v0.0.9
       hooks:
           - id: go-vulncheck
 ```
@@ -19,7 +19,7 @@ If you don't want to block the commit when some vulnerability is found, use this
 ```yaml
 repos:
     - repo: https://github.com/guionardo/govuln
-      rev: v0.0.5
+      rev: v0.0.9
       hooks:
           - id: go-vulncheck-just-warn
 ```

@@ -6,6 +6,8 @@ import subprocess
 import sys
 from typing import Tuple
 
+from internals import Internal
+
 
 class Table:
     def __init__(self, title, *headers):
@@ -117,23 +119,33 @@ class OSV:
 
 
 class SBOM:
-    def __init__(self, value: dict):
+    def __init__(self, value: dict, internal_owners: list[str]):
         self.go_version = Version(value.get('go_version', '0.0.0'))
         self.package = None
         self.modules = {'GO stdlib': self.go_version}
+        self.internals: list[Internal] = []
         for module in value.get('modules', []):
             if path := module.get('path'):
                 if version := module.get('version'):
                     self.modules[path] = Version(version)
+                    internal = Internal(path, version)
+                    if internal.valid and internal.owner in internal_owners:
+                        internal.run()
+                        if internal.has_vulnerabilities:
+                            self.internals.append(internal)
+
                 elif not self.package:
                     self.package = path
 
 
 class GoVulnCheck:
-    def __init__(self, just_warn: bool = False):
+    def __init__(
+        self, just_warn: bool = False, internal_repositories_owners: list[str] = []
+    ):
         self.sbom: SBOM = None
         self.osvs: list[OSV] = []
         self.just_warn = just_warn
+        self.internal_repositories_owners = internal_repositories_owners
 
     def summary(self):
         if not self.osvs:
@@ -142,6 +154,20 @@ class GoVulnCheck:
     def call(self) -> bool:
         if not (self.check_dependencies() and self.run_vulncheck()):
             return False
+        if self.sbom.internals:
+            table = Table(
+                'Affected internal repositories',
+                'Version',
+                'Package',
+                'Vulnerabilities',
+            )
+            for s in self.sbom.internals:
+                vulns = ', '.join([v['code'] for v in s.meta.vulnerabilities])
+
+                table.write(str(Version(s.version)), s.repo, vulns)
+
+            table.print()
+            print()
 
         if not self.osvs:
             return True
@@ -165,6 +191,7 @@ class GoVulnCheck:
                 table.write(str(cur_version), str(data['fixed']), package)
 
         table.print()
+
         print('\nℹ️  Run "govulncheck ./..." for more details')
         return False
 
@@ -233,7 +260,7 @@ class GoVulnCheck:
             if key == 'osv':
                 self.osvs.append(OSV(field[key]))
             elif key == 'SBOM':
-                self.sbom = SBOM(field[key])
+                self.sbom = SBOM(field[key], self.internal_repositories_owners)
             return ''
         except Exception as exc:
             return str(exc)
@@ -247,9 +274,15 @@ def main():
         default=False,
         help='Doesn`t block the commit, just warn',
     )
+    parser.add_argument(
+        '--internal-repositories-owners',
+        nargs='+',
+        default=['melisource', 'mercadolibre'],
+        help='List of internal repositories owners',
+    )
 
     args = parser.parse_args()
-    govuln = GoVulnCheck(args.just_warn)
+    govuln = GoVulnCheck(args.just_warn, args.internal_repositories_owners)
     return govuln()
 
 
