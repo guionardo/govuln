@@ -17,3 +17,4 @@
   minimum_pre_commit_version: 3.2.0
   pass_filenames: false
   always_run: true
+  verbose: true
