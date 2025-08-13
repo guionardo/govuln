@@ -1,0 +1,7 @@
+[project]
+name = "govuln-precommit"
+version = "0.2.0"
+description = "pre-commit hook for vulnerabilites checking in golang projects"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = []
