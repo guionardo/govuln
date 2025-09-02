@@ -3,13 +3,13 @@ package check
 import (
 	"testing"
 
-	"github.com/melisource/fury_fbm-fiscal-govulncheck/internal/store"
+	"github.com/guionardo/govuln/internal/store"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNew(t *testing.T) {
-	store, _ := store.New("")
-	c, err := New("../..", store, "melisource")
+	store, _ := store.New("", "guionardo")
+	c, err := New("../..", store, "guionardo")
 	if !assert.NoError(t, err) || !assert.NotNil(t, c) {
 		return
 	}

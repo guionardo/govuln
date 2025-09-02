@@ -1,11 +1,11 @@
-# FBM Fiscal GoVulnCheck
+# GoVuln
 
 <div align="center">
 
 [![Go Version](https://img.shields.io/badge/Go-1.24.6+-blue.svg)](https://golang.org)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
-[![Go](https://github.com/melisource/fury_fbm-fiscal-govulncheck/actions/workflows/go.yml/badge.svg)](https://github.com/melisource/fury_fbm-fiscal-govulncheck/actions/workflows/go.yml)
+[![Go](https://github.com/github.com/guionardo/govuln/actions/workflows/go.yml/badge.svg)](https://github.com/github.com/guionardo/govuln/actions/workflows/go.yml)
 
 *A comprehensive vulnerability scanner for Go projects with intelligent caching and submodule support*
 
@@ -13,7 +13,7 @@
 
 ## 🔍 Overview
 
-FBM Fiscal GoVulnCheck is an enhanced wrapper around Go's official `govulncheck` tool, designed to provide comprehensive vulnerability scanning for Go projects. It offers intelligent caching, submodule scanning, and seamless integration with pre-commit hooks, making it ideal for organizations with complex Go dependency graphs.
+GoVuln is an enhanced wrapper around Go's official `govulncheck` tool, designed to provide comprehensive vulnerability scanning for Go projects. It offers intelligent caching, submodule scanning, and seamless integration with pre-commit hooks, making it ideal for organizations with complex Go dependency graphs.
 
 ## ✨ Features
 
@@ -40,7 +40,7 @@ Add this to your `.pre-commit-config.yaml`:
 
 ```yaml
 repos:
-  - repo: https://github.com/melisource/fury_fbm-fiscal-govulncheck
+  - repo: https://github.com/github.com/guionardo/govuln
     rev: v0.2.0
     hooks:
       - id: go-vulncheck
@@ -50,22 +50,17 @@ For warning-only mode (non-blocking):
 
 ```yaml
 repos:
-  - repo: https://github.com/melisource/fury_fbm-fiscal-govulncheck
+  - repo: https://github.com/github.com/guionardo/govuln
     rev: v0.2.0
     hooks:
-      - id: go-vulncheck-just-warn
+      - id: go-vulncheck
+        args: [-just-warn]
 ```
 
 #### As a CLI Tool
 
 ```bash
-go install github.com/melisource/fury_fbm-fiscal-govulncheck@latest
-```
-
-Set up a convenient alias:
-
-```bash
-fury_fbm-fiscal-govulncheck -alias
+go install github.com/github.com/guionardo/govuln@latest
 ```
 
 Now you can use:
@@ -107,7 +102,7 @@ govuln -store-info
 | ------------------ | ----------------------------------------------- | ----------------- |
 | `-alias`           | Update your shell to use an alias 'govuln'      | `false`           |
 | `-dont-check-subs` | Don't check submodules                          | `false`           |
-| `-internal-owner`  | Internal owner for submodule scanning           | `"melisource"`    |
+| `-internal-owner`  | Internal owner for submodule scanning           | `""`    |
 | `-just-warn`       | Just warn about vulnerabilities without failing | `false`           |
 | `-path`            | Path of the project to check vulnerabilities    | Current directory |
 | `-store`           | Path of the store for caching checks            | `~/.govulncheck`  |
@@ -149,7 +144,7 @@ gvn --> subscan
 ### Scanning Process
 
 1. **Cache Check**: Verifies if vulnerabilities were checked within the last 24 hours
-2. **Main Scan**: Runs `govulncheck` on the primary project
+2. **Main Scan**: Runs `govuln` on the primary project
 3. **Submodule Discovery**: Identifies internal dependencies based on organization
 4. **Concurrent Submodule Scanning**: Checks up to 8 submodules simultaneously
 5. **Result Aggregation**: Combines all vulnerability findings
@@ -188,7 +183,7 @@ Add this to your `.pre-commit-config.yaml` file:
 ```yaml
 repos:
   # KEEP YOUR PREVIOUS HOOKS
-  - repo: https://github.com/melisource/fury_fbm-fiscal-govulncheck
+  - repo: https://github.com/github.com/guionardo/govuln
     rev: v0.2.2
     hooks:
       - id: go-vulncheck-just-warn
@@ -259,7 +254,7 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
 
 ```bash
 # Clone the repository
-git clone https://github.com/melisource/fury_fbm-fiscal-govulncheck.git
+git clone https://github.com/github.com/guionardo/govuln.git
 cd fury_fbm-fiscal-govulncheck
 
 # Install dependencies
@@ -292,9 +287,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🆘 Support
 
-- **Issues**: [GitHub Issues](https://github.com/melisource/fury_fbm-fiscal-govulncheck/issues)
-- **Documentation**: [Wiki](https://github.com/melisource/fury_fbm-fiscal-govulncheck/wiki)
-- **Security**: For security-related issues, please email security@melisource.com
+- **Issues**: [GitHub Issues](https://github.com/github.com/guionardo/govuln/issues)
+- **Documentation**: [Wiki](https://github.com/github.com/guionardo/govuln/wiki)
 
 ## 🙏 Acknowledgments
 
@@ -306,10 +300,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 <div align="center">
 
-**Made with ❤️ by the MeliSource Security Team: Furlan**
+**Made with ❤️ by Guionardo Furlan**
 
-[Report Bug](https://github.com/melisource/fury_fbm-fiscal-govulncheck/issues) •
-[Request Feature](https://github.com/melisource/fury_fbm-fiscal-govulncheck/issues) •
-[Documentation](https://github.com/melisource/fury_fbm-fiscal-govulncheck/wiki)
+[Report Bug](https://github.com/github.com/guionardo/govuln/issues) •
+[Request Feature](https://github.com/github.com/guionardo/govuln/issues) •
+[Documentation](https://github.com/github.com/guionardo/govuln/wiki)
 
 </div>

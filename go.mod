@@ -1,11 +1,13 @@
-module github.com/melisource/fury_fbm-fiscal-govulncheck
+module github.com/guionardo/govuln
 
 go 1.24.6
 
 require (
+	github.com/guionardo/go v0.0.1
 	github.com/hashicorp/go-version v1.7.0
 	github.com/jedib0t/go-pretty/v6 v6.6.8
 	github.com/stretchr/testify v1.11.1
+	github.com/urfave/cli/v3 v3.4.1
 	golang.org/x/sync v0.16.0
 	gopkg.in/yaml.v3 v3.0.1
 )

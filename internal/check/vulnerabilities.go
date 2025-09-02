@@ -3,13 +3,15 @@ package check
 import (
 	"fmt"
 	"io"
+	"os"
+	"slices"
 	"strings"
 	"sync"
 
+	"github.com/guionardo/govuln/internal/output"
 	goversion "github.com/hashicorp/go-version"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
-	"github.com/melisource/fury_fbm-fiscal-govulncheck/internal/config"
 )
 
 type (
@@ -30,36 +32,31 @@ type (
 	}
 )
 
-func (v Vulnerabilities) Table(w io.Writer, title string, version string) {
-	t := table.NewWriter()
-	if len(v) == 0 {
-		t.SetStyle(table.StyleColoredBlackOnGreenWhite)
-	} else {
-		t.SetStyle(table.StyleColoredRedWhiteOnBlack)
-		t.AppendHeader(table.Row{"Package", "Vulnerability", "Introduced", "Fixed", "Current"})
+func (v Vulnerabilities) Table(title string, version string) {
+	isInErrorStyle := len(v) > 0
+	o := output.New(os.Stdout, title, isInErrorStyle)
+	if isInErrorStyle {
+		o.AppendHeader(table.Row{"Package", "Vulnerability", "Introduced", "Fixed", "Current"})
 	}
-	t.SetOutputMirror(w)
+
 	previousPackageLength := 0
 	for pack, vulns := range v {
 		if previousPackageLength > 2 {
-			t.AppendSeparator()
+			o.AppendSeparator()
 		}
 		for _, vuln := range vulns {
-			t.AppendRow(table.Row{pack, vuln.Id, vuln.Introduced, vuln.Fixed, vuln.Current})
+			o.AppendRow(table.Row{pack, vuln.Id, vuln.Introduced, vuln.Fixed, vuln.Current},
+				table.RowConfig{AutoMerge: true, AutoMergeAlign: text.AlignAuto})
 		}
 		previousPackageLength = len(vulns)
 	}
-	if len(title) > 0 {
-		t.SetTitle(title)
-	}
 
 	if len(v) == 0 {
-		t.AppendFooter(table.Row{"SUCCESS!! No Vulnerabilities Found", version}, table.RowConfig{AutoMerge: true, AutoMergeAlign: text.AlignCenter})
+		o.AppendFooter(table.Row{"SUCCESS!! No Vulnerabilities Found", version})
 	} else {
-		t.AppendFooter(table.Row{"Total", len(v), "", "", version}, table.RowConfig{AutoMerge: true, AutoMergeAlign: text.AlignCenter})
+		o.AppendFooter(table.Row{"Total", len(v), "", "", version})
 	}
-	config.Render(t)
-	_, _ = w.Write([]byte("\n"))
+	o.Render()
 }
 
 func (v *Vulnerability) Fix() {
@@ -109,34 +106,37 @@ func (s *SubmodulesVulnerabilities) Add(module string, version string, vuln stri
 	s.sub[module][version] = append(s.sub[module][version], vuln)
 }
 
-func (s *SubmodulesVulnerabilities) Table(w io.Writer) {
+func (s *SubmodulesVulnerabilities) Table(w io.Writer, internalOwner string) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
-	t := table.NewWriter()
-	t.SetTitle("Submodules Vulnerabilities")
-	t.SetOutputMirror(w)
+	t := output.New(w, "Submodules vulnerabilities", false)
 	if len(s.sub) == 0 {
-		t.SetStyle(table.StyleColoredBlackOnGreenWhite)
-	} else {
-		t.SetStyle(table.StyleColoredRedWhiteOnBlack)
-		t.AppendHeader(table.Row{"Module", "Version", "Vulnerability"})
+		t.AppendHeader(table.Row{"No submodules from owner", internalOwner})
+		t.Render()
+		return
 	}
+	t.AppendHeader(table.Row{"Module", "Version", "Vulnerability"})
 
-	t.SetStyle(table.StyleColoredRedWhiteOnBlack)
+	hasVulnerabilities := false
 	for module, versions := range s.sub {
-		w := strings.Split(module, "melisource/")
-		module = w[len(w)-1]
+		// w := strings.Split(module, path.Join(internalOwner, ""))
+		// module = w[len(w)-1]
 		for version, vulns := range versions {
+			if !slices.Contains(vulns, "SAFE") {
+				hasVulnerabilities = true
+
+			}
 			if len(vulns) > 2 {
 				vulns = append(vulns[0:2], fmt.Sprintf("+%d", len(vulns)-2))
 			}
 			t.AppendRow(table.Row{module, version, strings.Join(vulns, " ")})
 		}
 	}
-	if len(s.sub) == 0 {
-		t.AppendFooter(table.Row{"SUCCESS!! No Vulnerabilities Found"}, table.RowConfig{AutoMerge: true, AutoMergeAlign: text.AlignCenter})
-	} else {
+	if hasVulnerabilities {
+		t.SetWithError(true)
 		t.AppendFooter(table.Row{"Total", len(s.sub)}, table.RowConfig{AutoMerge: true, AutoMergeAlign: text.AlignCenter})
+	} else {
+		t.AppendFooter(table.Row{"SUCCESS!! No Vulnerabilities Found"}, table.RowConfig{AutoMerge: true, AutoMergeAlign: text.AlignCenter})
 	}
-	config.Render(t)
+	t.Render()
 }

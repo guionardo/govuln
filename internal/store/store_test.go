@@ -5,12 +5,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/melisource/fury_fbm-fiscal-govulncheck/internal/config"
+	"github.com/guionardo/govuln/internal/config"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNew(t *testing.T) {
-	s, err := New(path.Join(t.TempDir(), config.LocalStoreFolder))
+	s, err := New(path.Join(t.TempDir(), config.LocalStoreFolder), "guionardo")
 	assert.NoError(t, err)
 	assert.True(t, strings.HasSuffix(s.path, config.LocalStoreFolder))
 

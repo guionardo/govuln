@@ -1,7 +1,7 @@
 - id: go-vulncheck
   name: Check for golang vulnerabilities
   description: prevents vulnerabilities from being committed.
-  entry: govulncheck
+  entry: govuln
   language: golang
   stages: [pre-commit, pre-push, manual]
   minimum_pre_commit_version: 3.2.0

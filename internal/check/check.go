@@ -9,12 +9,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/guionardo/govuln/internal/config"
+	"github.com/guionardo/govuln/internal/exec"
+	"github.com/guionardo/govuln/internal/git"
+	gocache "github.com/guionardo/govuln/internal/go_cache"
+	"github.com/guionardo/govuln/internal/store"
 	goversion "github.com/hashicorp/go-version"
-	"github.com/melisource/fury_fbm-fiscal-govulncheck/internal/config"
-	"github.com/melisource/fury_fbm-fiscal-govulncheck/internal/exec"
-	"github.com/melisource/fury_fbm-fiscal-govulncheck/internal/git"
-	gocache "github.com/melisource/fury_fbm-fiscal-govulncheck/internal/go_cache"
-	"github.com/melisource/fury_fbm-fiscal-govulncheck/internal/store"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -186,7 +186,7 @@ func (c *Check) Run(checkType CheckType) error {
 	}
 
 	c.Summarize()
-	c.vulnerabilities.Table(os.Stdout, c.safeGetModulePath(), c.meta.PackageVersion)
+	c.vulnerabilities.Table(c.safeGetModulePath(), c.meta.PackageVersion)
 
 	return err
 }
@@ -352,6 +352,7 @@ func (c *Check) CheckSubs() {
 
 	smVulns := NewSubmodulesVulnerabilities()
 	eg = errgroup.Group{}
+	eg.SetLimit(8)
 
 	runCheck := func(mod string) error {
 		c, err := New(mod, c.store, "")
@@ -371,25 +372,23 @@ func (c *Check) CheckSubs() {
 							smVulns.Add(c.safeGetModulePath(), version, vuln.Id)
 						}
 					}
+				} else {
+					smVulns.Add(c.safeGetModulePath(), version, "SAFE")
 				}
 			}
 		}
 		return nil
 	}
 	for _, mod := range mods {
-		if err := runCheck(mod); err != nil {
-			fmt.Printf("error running check: %s\n", err)
-			break
-		}
+		eg.Go(func() error {
+			return runCheck(mod)
+		})
 	}
 	if err := eg.Wait(); err != nil {
 		fmt.Printf("error running checks: %s\n", err)
 	}
 
-	if err := eg.Wait(); err != nil {
-		fmt.Printf("error running checks: %s\n", err)
-	}
-	smVulns.Table(os.Stdout)
+	smVulns.Table(os.Stdout, c.internalOwner)
 }
 
 func (c *Check) HasVulnerabilities() bool {

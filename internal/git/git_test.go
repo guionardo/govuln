@@ -13,7 +13,9 @@ func TestParseGitURL(t *testing.T) {
 		wantErr        bool
 	}{
 		{"invalid_name_should_return_error", "invalid_url", "", "", "", true},
-		{"valid_git_should_return_data", "github.com/melisource/govulncheck", "github.com", "melisource", "govulncheck", false},
+		{"valid_git_should_return_data", "github.com/guionardo/govuln", "github.com", "guionardo", "govuln", false},
+		{"config_ssh_git_should_return_data", "git@github.com:guionardo/govuln.git", "github.com", "guionardo", "govuln", false},
+		{"config_https_git_should_return_data", "https://github.com/guionardo/govuln.git", "github.com", "guionardo", "govuln", false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -9,15 +9,17 @@ import (
 	"strings"
 	"time"
 
+	pathtools "github.com/guionardo/go/pkg/path_tools"
+	"github.com/guionardo/govuln/internal/config"
+	"github.com/guionardo/govuln/internal/output"
 	"github.com/jedib0t/go-pretty/v6/table"
-	"github.com/melisource/fury_fbm-fiscal-govulncheck/internal/config"
-	"github.com/melisource/fury_fbm-fiscal-govulncheck/internal/tools/pathtools"
 	"gopkg.in/yaml.v3"
 )
 
 type (
 	Store struct {
-		path string
+		path          string
+		internalOwner string
 	}
 	MetaFile struct {
 		PackageName        string    `yaml:"package_name"`
@@ -27,7 +29,7 @@ type (
 	}
 )
 
-func New(path string) (*Store, error) {
+func New(path, internalOwner string) (*Store, error) {
 	var err error
 	if len(path) == 0 {
 		path = config.Get().StoreDefaultPath
@@ -42,7 +44,8 @@ func New(path string) (*Store, error) {
 	}
 
 	return &Store{
-		path: path,
+		path:          path,
+		internalOwner: internalOwner,
 	}, nil
 }
 
@@ -54,22 +57,22 @@ func (s *Store) Path(pieces ...string) (string, error) {
 func (s *Store) ShowInfo() {
 	fmt.Printf("Store path: %s\n", s.path)
 	var fileCount, dirCount, fileSize int64
-	t := table.NewWriter()
-	t.SetOutputMirror(os.Stdout)
-	t.SetStyle(table.StyleColoredBlackOnBlueWhite)
-	t.SetTitle("Store informations")
+	t := output.New(os.Stdout, "Store informations", false)
 	t.AppendHeader(table.Row{"Path", s.path})
 	t.AppendHeader(table.Row{"Type", "Name", "Version", "Last Update", "Vulnerabilities"})
 
-	err := filepath.WalkDir(s.path, func(path string, d fs.DirEntry, err error) error {
+	err := filepath.WalkDir(s.path, func(filePath string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 		if d.IsDir() {
 			dirCount++
 		} else {
-			if metaFile := ReadMetaFile(path); metaFile != nil {
-				w := strings.Split(metaFile.PackageName, "melisource/")
+			if metaFile := ReadMetaFile(filePath); metaFile != nil {
+				if metaFile.HasVulnerabilities {
+					t.SetWithError(true)
+				}
+				w := strings.Split(metaFile.PackageName, path.Join(s.internalOwner, ""))
 				module := w[len(w)-1]
 				if len(metaFile.PackageVersion) > 0 {
 					t.AppendRow(table.Row{"Package", module, metaFile.PackageVersion, metaFile.LastUpdate.Format(time.DateTime), metaFile.HasVulnerabilities})
@@ -88,20 +91,17 @@ func (s *Store) ShowInfo() {
 	if err != nil {
 		t.AppendFooter(table.Row{"Error", err.Error()})
 	}
-	config.Render(t)
+	t.Render()
 
 }
 
 func (s *Store) Clear() {
-	t := table.NewWriter()
-	t.SetOutputMirror(os.Stdout)
-	t.SetStyle(table.StyleColoredBlackOnBlueWhite)
-	t.SetTitle("Store cleaning")
+	t := output.New(os.Stdout, "Store cleaning", false)
 	t.AppendHeader(table.Row{"Directory", "Status"})
 	dirEntries, err := os.ReadDir(s.path)
 	if err != nil {
 		t.AppendRow(table.Row{"ERROR", err.Error()})
-		config.Render(t)
+		t.Render()
 		os.Exit(1)
 	}
 	for _, dirEntry := range dirEntries {
@@ -115,7 +115,7 @@ func (s *Store) Clear() {
 			}
 		}
 	}
-	config.Render(t)
+	t.Render()
 }
 
 func (s *Store) GetProjectMetaFile(projectPath string) string {

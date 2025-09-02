@@ -13,10 +13,10 @@ func TestNew(t *testing.T) {
 	if !assert.NotNil(t, cache) {
 		return
 	}
-	p, err := cache.Get("github.com/melisource/fury_fbm-fiscal-govulncheck", "v0.0.0")
+	p, err := cache.Get("github.com/guionardo/govuln", "v0.0.0")
 	assert.Error(t, err)
 	assert.NotEmpty(t, p)
 
 	pn := cache.GetPackageName(p)
-	assert.Equal(t, "github.com/melisource/fury_fbm-fiscal-govulncheck@v0.0.0", pn)
+	assert.Equal(t, "github.com/guionardo/govuln@v0.0.0", pn)
 }
