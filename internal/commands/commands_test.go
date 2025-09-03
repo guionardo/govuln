@@ -15,6 +15,11 @@ func TestGetRoot(t *testing.T) {
 	assert.NotNil(t, root)
 }
 
+func TestGetStore(t *testing.T) {
+	cmd := storeCommand()
+	assert.NotNil(t, cmd)
+}
+
 func Test_outputValidator(t *testing.T) {
 
 	tests := []struct {
