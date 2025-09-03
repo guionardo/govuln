@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guionardo/govuln/internal/config"
+	"github.com/guionardo/govuln/internal/params"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -16,11 +16,11 @@ func TestNew(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
-	s, err := New(path.Join(t.TempDir(), config.LocalStoreFolder), "guionardo")
+	s, err := New(path.Join(t.TempDir(), params.LocalStoreFolder), "guionardo")
 	assert.NoError(t, err)
-	assert.True(t, strings.HasSuffix(s.path, config.LocalStoreFolder))
+	assert.True(t, strings.HasSuffix(s.path, params.LocalStoreFolder))
 
 	p, err := s.Path("test", "folder")
 	assert.NoError(t, err)
-	assert.True(t, strings.HasSuffix(p, path.Join(config.LocalStoreFolder, "test", "folder")))
+	assert.True(t, strings.HasSuffix(p, path.Join(params.LocalStoreFolder, "test", "folder")))
 }

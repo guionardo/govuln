@@ -6,7 +6,7 @@ import (
 	"os"
 	"slices"
 
-	"github.com/guionardo/govuln/internal/config"
+	"github.com/guionardo/govuln/internal/params"
 	"github.com/urfave/cli/v3"
 )
 
@@ -34,7 +34,7 @@ func GetRoot() *cli.Command {
 			&cli.StringFlag{
 				Name:        "store",
 				Usage:       "Path of the store for caching checks of internal packages",
-				Value:       config.Get().StoreDefaultPath,
+				Value:       params.STORE_DEFAULT_PATH,
 				Destination: &storePath,
 			},
 			&cli.StringFlag{

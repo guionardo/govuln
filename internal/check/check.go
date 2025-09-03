@@ -8,11 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guionardo/govuln/internal/config"
 	"github.com/guionardo/govuln/internal/entities"
 	"github.com/guionardo/govuln/internal/exec"
 	"github.com/guionardo/govuln/internal/git"
 	gocache "github.com/guionardo/govuln/internal/go_cache"
+	"github.com/guionardo/govuln/internal/params"
 	"github.com/guionardo/govuln/internal/store"
 	"github.com/hashicorp/go-version"
 	"golang.org/x/sync/errgroup"
@@ -153,7 +153,7 @@ func (c *Check) Run(checkType CheckType) error {
 		}
 	}
 
-	exitCode, output, err := exec.Run(config.Get().GoVulnCheckBinary, "-json", "-C", c.folder, "./...")
+	exitCode, output, err := exec.Run(params.GO_VULN_CHECK_BINARY, "-json", "-C", c.folder, "./...")
 	if err == nil && exitCode != 0 {
 		err = fmt.Errorf("error running govulncheck: %d - %s", exitCode, output)
 	}

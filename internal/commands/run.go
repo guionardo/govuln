@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/guionardo/govuln/internal/check"
-	"github.com/guionardo/govuln/internal/config"
 	"github.com/guionardo/govuln/internal/params"
 	"github.com/guionardo/govuln/internal/store"
 
@@ -28,7 +27,7 @@ func runCommand() *cli.Command {
 			&cli.StringFlag{
 				Name:        "path",
 				Usage:       "Path of the project to check vulnerabilities",
-				Value:       config.Get().CurrentPath,
+				Value:       params.CURRENT_PATH,
 				Destination: &projectPath,
 			},
 			&cli.BoolFlag{
@@ -46,7 +45,7 @@ func runCommand() *cli.Command {
 			&cli.StringFlag{
 				Name:        "internal-owner",
 				Usage:       "git owner/organization to check sub module vulnerabilities",
-				Value:       config.Get().InternalOwner,
+				Value:       params.INTERNAL_OWNER(),
 				Destination: &internalOwner,
 			},
 		},
@@ -55,7 +54,7 @@ func runCommand() *cli.Command {
 }
 
 func run(ctx context.Context, c *cli.Command) error {
-	params.Parameters.OutputType = outputType
+	params.OUTPUT_TYPE = outputType
 	if !pathtools.DirExists(projectPath) {
 		return fmt.Errorf("project path not found: %s", projectPath)
 	}
@@ -69,7 +68,7 @@ func run(ctx context.Context, c *cli.Command) error {
 	if err != nil {
 		return fmt.Errorf("checker error: %w", err)
 	}
-	fmt.Println(config.AppName)
+	fmt.Println(params.AppName)
 
 	err = chk.Run(check.ProjectCheck)
 

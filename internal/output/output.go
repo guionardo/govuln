@@ -27,14 +27,14 @@ func New(w io.Writer, title string, withErrorStyle bool) *Output {
 	o := &Output{
 		w:        w,
 		t:        tw,
-		markDown: params.Parameters.OutputType == "markdown",
+		markDown: params.OUTPUT_TYPE == "markdown",
 	}
 	o.SetWithError(withErrorStyle)
 	return o
 }
 
 func (o *Output) SetWithError(withErrorStyle bool) {
-	if params.Parameters.OutputType == "color" {
+	if params.OUTPUT_TYPE == "color" {
 		if withErrorStyle {
 			o.t.SetStyle(table.StyleColoredBlackOnRedWhite)
 		} else {

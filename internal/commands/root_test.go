@@ -2,12 +2,15 @@ package commands
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 
+	"github.com/guionardo/govuln/internal/params"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestGetRoot(t *testing.T) {
+	params.CURRENT_PATH, _ = filepath.Abs("../..")
 	root := GetRoot()
 	assert.NotNil(t, root)
 }

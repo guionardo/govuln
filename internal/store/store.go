@@ -11,8 +11,8 @@ import (
 	"time"
 
 	pathtools "github.com/guionardo/go/pkg/path_tools"
-	"github.com/guionardo/govuln/internal/config"
 	"github.com/guionardo/govuln/internal/output"
+	"github.com/guionardo/govuln/internal/params"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"gopkg.in/yaml.v3"
 )
@@ -26,7 +26,7 @@ type (
 
 func New(path, internalOwner string) (store *Store, err error) {
 	if len(path) == 0 {
-		path = config.Get().StoreDefaultPath
+		path = params.STORE_DEFAULT_PATH
 	} else {
 		if p, err := filepath.Abs(path); err == nil {
 			path = p
