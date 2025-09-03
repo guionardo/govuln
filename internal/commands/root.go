@@ -3,7 +3,6 @@ package commands
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"slices"
 
@@ -16,6 +15,12 @@ var (
 	outputType string
 )
 
+func outputValidator(v string) error {
+	if !slices.Contains([]string{"color", "table", "markdown"}, v) {
+		return fmt.Errorf("invalid output: %s", v)
+	}
+	return nil
+}
 func GetRoot() *cli.Command {
 	cmd := &cli.Command{
 		Version:     "v0.2.0",
@@ -33,15 +38,10 @@ func GetRoot() *cli.Command {
 				Destination: &storePath,
 			},
 			&cli.StringFlag{
-				Name:  "output",
-				Usage: "format of the output: color, markdown, json, yaml", //TODO: Implement this output formats
-				Value: "color",
-				Validator: func(v string) error {
-					if !slices.Contains([]string{"color", "table", "markdown"}, v) {
-						return fmt.Errorf("invalid output: %s", v)
-					}
-					return nil
-				},
+				Name:        "output",
+				Usage:       "format of the output: color, markdown, json, yaml", //TODO: Implement this output formats
+				Value:       "color",
+				Validator:   outputValidator,
 				Destination: &outputType,
 			},
 		},
@@ -50,9 +50,10 @@ func GetRoot() *cli.Command {
 	return cmd
 }
 
-func Run() {
+func Run() int {
 	cmd := GetRoot()
 	if err := cmd.Run(context.Background(), os.Args); err != nil {
-		log.Fatal(err)
+		return 1
 	}
+	return 0
 }

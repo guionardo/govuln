@@ -30,10 +30,14 @@ package main
 
 import (
 	"os"
+	"testing"
 
-	"github.com/guionardo/govuln/internal/commands"
+	"github.com/stretchr/testify/assert"
 )
 
-func main() {
-	os.Exit(commands.Run())
+func Test_main(t *testing.T) {
+	assert.Panics(t, func() {
+		os.Args = []string{os.Args[0], "--version"}
+		main()
+	})
 }
