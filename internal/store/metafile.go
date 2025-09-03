@@ -1,22 +1,23 @@
-package check
+package store
 
 import (
 	"os"
 	"time"
 
+	"github.com/guionardo/govuln/internal/entities"
 	"gopkg.in/yaml.v3"
 )
 
 type MetaFile struct {
-	filename           string
+	Filename           string
 	PackageName        string          `yaml:"package_name"`
 	PackageVersion     string          `yaml:"package_version"`
 	Vulnerabilities    Vulnerabilities `yaml:"vulnerabilities"`
 	LastUpdate         time.Time       `yaml:"last_update"`
 	Checked            bool            `yaml:"checked"`
-	SBOM               SBOM            `yaml:"sbom"`
-	OSV                []*OSV          `yaml:"osv"`
-	Config             Config          `yaml:"config"`
+	SBOM               entities.SBOM   `yaml:"sbom"`
+	OSV                []*entities.OSV `yaml:"osv"`
+	Config             entities.Config `yaml:"config"`
 	HasVulnerabilities bool            `yaml:"has_vulnerabilities"`
 	GoModHash          uint64          `yaml:"go_mod_hash"`
 }
@@ -31,7 +32,7 @@ func NewMetaFile(filename string) *MetaFile {
 			}
 		}
 	}
-	meta.filename = filename
+	meta.Filename = filename
 	if meta.Vulnerabilities == nil {
 		meta.Vulnerabilities = make(Vulnerabilities)
 	}
@@ -58,7 +59,7 @@ func (m *MetaFile) Save() error {
 	m.HasVulnerabilities = len(m.Vulnerabilities) > 0
 	content, err := yaml.Marshal(m)
 	if err == nil {
-		err = os.WriteFile(m.filename, content, 0644)
+		err = os.WriteFile(m.Filename, content, 0644)
 	}
 	return err
 }

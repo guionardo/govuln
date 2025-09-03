@@ -1,0 +1,63 @@
+{
+  "SBOM": {
+    "go_version": "go1.24.6",
+    "modules": [
+      {
+        "path": "github.com/guionardo/govuln"
+      },
+      {
+        "path": "github.com/guionardo/go",
+        "version": "v0.0.1"
+      },
+      {
+        "path": "github.com/hashicorp/go-version",
+        "version": "v1.7.0"
+      },
+      {
+        "path": "github.com/jedib0t/go-pretty/v6",
+        "version": "v6.6.8"
+      },
+      {
+        "path": "github.com/mattn/go-runewidth",
+        "version": "v0.0.16"
+      },
+      {
+        "path": "github.com/rivo/uniseg",
+        "version": "v0.4.7"
+      },
+      {
+        "path": "github.com/urfave/cli/v3",
+        "version": "v3.4.1"
+      },
+      {
+        "path": "golang.org/x/sync",
+        "version": "v0.16.0"
+      },
+      {
+        "path": "golang.org/x/text",
+        "version": "v0.28.0"
+      },
+      {
+        "path": "gopkg.in/yaml.v3",
+        "version": "v3.0.1"
+      },
+      {
+        "path": "stdlib",
+        "version": "v1.24.6"
+      }
+    ],
+    "roots": [
+      "github.com/guionardo/govuln/internal/exec",
+      "github.com/guionardo/govuln/internal/git",
+      "github.com/guionardo/govuln/internal/config",
+      "github.com/guionardo/govuln/internal/entities",
+      "github.com/guionardo/govuln/internal/go_cache",
+      "github.com/guionardo/govuln/internal/params",
+      "github.com/guionardo/govuln/internal/output",
+      "github.com/guionardo/govuln/internal/store",
+      "github.com/guionardo/govuln/internal/check",
+      "github.com/guionardo/govuln/internal/commands",
+      "github.com/guionardo/govuln"
+    ]
+  }
+}

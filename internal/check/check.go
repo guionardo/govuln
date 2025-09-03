@@ -5,16 +5,16 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"slices"
 	"strings"
 	"time"
 
 	"github.com/guionardo/govuln/internal/config"
+	"github.com/guionardo/govuln/internal/entities"
 	"github.com/guionardo/govuln/internal/exec"
 	"github.com/guionardo/govuln/internal/git"
 	gocache "github.com/guionardo/govuln/internal/go_cache"
 	"github.com/guionardo/govuln/internal/store"
-	goversion "github.com/hashicorp/go-version"
+	"github.com/hashicorp/go-version"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -30,20 +30,20 @@ type (
 	// The Check instance maintains state throughout the scanning lifecycle and
 	// provides caching to optimize repeated scans of the same project.
 	Check struct {
-		store           *store.Store    // Cache storage for scan results and Git repositories
-		folder          string          // Absolute path to the Go project being scanned
-		meta            *MetaFile       // Metadata cache file for this project
-		vulnerabilities Vulnerabilities // Current scan results: map[packageName][]*Vulnerability
-		config          *Config         // govulncheck configuration data
-		sbom            *SBOM           // Software Bill of Materials from govulncheck
-		osvs            []*OSV          // Open Source Vulnerability database entries
-		internalOwner   string          // Organization name for internal dependency scanning
+		store           *store.Store          // Cache storage for scan results and Git repositories
+		folder          string                // Absolute path to the Go project being scanned
+		meta            *store.MetaFile       // Metadata cache file for this project
+		vulnerabilities store.Vulnerabilities // Current scan results: map[packageName][]*Vulnerability
+		config          *entities.Config      // govulncheck configuration data
+		sbom            *entities.SBOM        // Software Bill of Materials from govulncheck
+		osvs            []*entities.OSV       // Open Source Vulnerability database entries
+		internalOwner   string                // Organization name for internal dependency scanning
 	}
 
 	// Versions represents a collection of semantic versions for dependency management.
 	// Used internally for tracking multiple versions of the same module and checking
 	// version ranges against vulnerability introduction/fix versions.
-	Versions []*goversion.Version
+	Versions []*version.Version
 
 	CheckType string
 )
@@ -83,7 +83,7 @@ func (c *Check) safeGetModulePath() string {
 //	if err != nil {
 //	    log.Fatal(err)
 //	}
-func New(folder string, store *store.Store, internalOwner string) (*Check, error) {
+func New(folder string, stor *store.Store, internalOwner string) (*Check, error) {
 	abs, err := filepath.Abs(folder)
 	if err != nil {
 		return nil, err
@@ -93,11 +93,11 @@ func New(folder string, store *store.Store, internalOwner string) (*Check, error
 		return nil, fmt.Errorf("folder %s is not a go module", folder)
 	}
 
-	metaFile := store.GetProjectMetaFile(folder)
+	metaFile := stor.GetProjectMetaFile(folder)
 	return &Check{
-		store:         store,
+		store:         stor,
 		folder:        folder,
-		meta:          NewMetaFile(metaFile),
+		meta:          store.NewMetaFile(metaFile),
 		internalOwner: internalOwner,
 	}, nil
 }
@@ -164,18 +164,18 @@ func (c *Check) Run(checkType CheckType) error {
 	var body strings.Builder
 	c.config = nil
 	c.sbom = nil
-	c.osvs = make([]*OSV, 0, 16)
+	c.osvs = make([]*entities.OSV, 0, 16)
 	for line := range strings.SplitSeq(string(output), "\n") {
 		if strings.HasPrefix(line, "{") {
 			body.Reset()
 			body.WriteString(line)
 		} else if strings.HasPrefix(line, "}") {
 			body.WriteString(line)
-			if config := GetConfig(body.String()); config != nil {
+			if config := entities.GetConfig(body.String()); config != nil {
 				c.config = config
-			} else if sbom := GetSBOM(body.String()); sbom != nil {
+			} else if sbom := entities.GetSBOM(body.String()); sbom != nil {
 				c.sbom = sbom
-			} else if osv := GetOSV(body.String()); osv != nil {
+			} else if osv := entities.GetOSV(body.String()); osv != nil {
 				c.osvs = append(c.osvs, osv)
 			}
 
@@ -191,10 +191,13 @@ func (c *Check) Run(checkType CheckType) error {
 	return err
 }
 
-func (v Versions) Has(version *goversion.Version) bool {
-	return slices.ContainsFunc(v, func(vr *goversion.Version) bool {
-		return vr.Equal(version)
-	})
+func (v Versions) Has(version version.Version) bool {
+	for _, vr := range v {
+		if vr.Equal(&version) {
+			return true
+		}
+	}
+	return false
 }
 
 // isVulnerable checks if the current version is affected by a vulnerability.
@@ -211,7 +214,7 @@ func (v Versions) Has(version *goversion.Version) bool {
 // Returns:
 //   - true if the current version is vulnerable
 //   - false if the current version is safe (either predates introduction or includes fix)
-func isVulnerable(current, introduced, fixed *goversion.Version) bool {
+func isVulnerable(current, introduced, fixed *version.Version) bool {
 	if fixed != nil && current.GreaterThanOrEqual(fixed) {
 		return false // Version has the fix
 	}
@@ -247,13 +250,13 @@ func (c *Check) Summarize() {
 	modules := make(map[string]Versions)
 	for _, module := range c.sbom.Modules {
 		if len(module.Version) > 0 {
-			if v, err := goversion.NewVersion(module.Version); err == nil {
+			if v, err := version.NewVersion(module.Version); err == nil {
 				modules[module.Path] = append(modules[module.Path], v)
 			}
 		}
 	}
-	goVersion, _ := goversion.NewVersion(strings.TrimPrefix(c.sbom.GoVersion, "go"))
-	c.vulnerabilities = make(Vulnerabilities)
+	goVersion, _ := version.NewVersion(strings.TrimPrefix(c.sbom.GoVersion, "go"))
+	c.vulnerabilities = make(store.Vulnerabilities)
 
 	for _, osv := range c.osvs {
 		for _, aff := range osv.Affected {
@@ -261,7 +264,7 @@ func (c *Check) Summarize() {
 			// Detect vulnerabilities for stdlib
 			if aff.Package.Name == "stdlib" && aff.Package.Ecosystem == "Go" {
 				if isVulnerable(goVersion, introduced, fixed) {
-					c.vulnerabilities[aff.Package.Name] = append(c.vulnerabilities[aff.Package.Name], &Vulnerability{
+					c.vulnerabilities[aff.Package.Name] = append(c.vulnerabilities[aff.Package.Name], &store.Vulnerability{
 						Id:         osv.Id,
 						Summary:    osv.Summary,
 						Introduced: introduced,
@@ -274,7 +277,7 @@ func (c *Check) Summarize() {
 			if versions, ok := modules[aff.Package.Name]; ok {
 				for _, version := range versions {
 					if isVulnerable(version, introduced, fixed) {
-						c.vulnerabilities[aff.Package.Name] = append(c.vulnerabilities[aff.Package.Name], &Vulnerability{
+						c.vulnerabilities[aff.Package.Name] = append(c.vulnerabilities[aff.Package.Name], &store.Vulnerability{
 							Id:         osv.Id,
 							Summary:    osv.Summary,
 							Introduced: introduced,
@@ -293,8 +296,8 @@ func (c *Check) Summarize() {
 	c.meta.Config = *c.config
 
 	c.meta.Checked = true
-	if err := c.meta.Save(); err != nil {
-		fmt.Printf("Error saving meta file %s - %s", c.meta.filename, err)
+	if err := c.store.SaveMetaFile(c.meta); err != nil {
+		fmt.Printf("Error saving meta file %s - %s", c.meta.Filename, err)
 	}
 }
 
@@ -350,7 +353,7 @@ func (c *Check) CheckSubs() {
 
 	}
 
-	smVulns := NewSubmodulesVulnerabilities()
+	smVulns := store.NewSubmodulesVulnerabilities()
 	eg = errgroup.Group{}
 	eg.SetLimit(8)
 

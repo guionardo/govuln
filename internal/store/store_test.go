@@ -10,6 +10,12 @@ import (
 )
 
 func TestNew(t *testing.T) {
+	t.Run("empty_path_get_default", func(t *testing.T) {
+		s, err := New("", "")
+		assert.NotNil(t, s)
+		assert.NoError(t, err)
+	})
+
 	s, err := New(path.Join(t.TempDir(), config.LocalStoreFolder), "guionardo")
 	assert.NoError(t, err)
 	assert.True(t, strings.HasSuffix(s.path, config.LocalStoreFolder))

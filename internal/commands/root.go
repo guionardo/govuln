@@ -1,7 +1,10 @@
 package commands
 
 import (
+	"context"
 	"fmt"
+	"log"
+	"os"
 	"slices"
 
 	"github.com/guionardo/govuln/internal/config"
@@ -45,4 +48,11 @@ func GetRoot() *cli.Command {
 	}
 
 	return cmd
+}
+
+func Run() {
+	cmd := GetRoot()
+	if err := cmd.Run(context.Background(), os.Args); err != nil {
+		log.Fatal(err)
+	}
 }

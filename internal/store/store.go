@@ -1,6 +1,7 @@
 package store
 
 import (
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -21,32 +22,35 @@ type (
 		path          string
 		internalOwner string
 	}
-	MetaFile struct {
-		PackageName        string    `yaml:"package_name"`
-		PackageVersion     string    `yaml:"package_version"`
-		LastUpdate         time.Time `yaml:"last_update"`
-		HasVulnerabilities bool      `yaml:"has_vulnerabilities"`
-	}
 )
 
-func New(path, internalOwner string) (*Store, error) {
-	var err error
+func New(path, internalOwner string) (store *Store, err error) {
 	if len(path) == 0 {
 		path = config.Get().StoreDefaultPath
 	} else {
-		path, err = filepath.Abs(path)
-		if err != nil {
-			return nil, err
+		if p, err := filepath.Abs(path); err == nil {
+			path = p
 		}
 	}
-	if err = pathtools.CreatePath(filepath.Join(path, "projects")); err != nil {
-		return nil, err
+	if err = pathtools.CreatePath(filepath.Join(path, "projects")); err == nil {
+		store = &Store{
+			path:          path,
+			internalOwner: internalOwner,
+		}
 	}
 
-	return &Store{
-		path:          path,
-		internalOwner: internalOwner,
-	}, nil
+	return store, err
+}
+
+func (s *Store) ReadMetaFile(projectPath string) (metaFile *MetaFile) {
+	return ReadMetaFile(s.GetProjectMetaFile(projectPath))
+}
+
+func (s *Store) SaveMetaFile(metaFile *MetaFile) error {
+	if metaFile != nil {
+		return metaFile.Save()
+	}
+	return errors.New("null metafile - can not save")
 }
 
 func (s *Store) Path(pieces ...string) (string, error) {
