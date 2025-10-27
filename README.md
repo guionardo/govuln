@@ -5,7 +5,7 @@
 [![Go Version](https://img.shields.io/badge/Go-1.24.6+-blue.svg)](https://golang.org)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
-[![Go](https://github.com/github.com/guionardo/govuln/actions/workflows/go.yml/badge.svg)](https://github.com/github.com/guionardo/govuln/actions/workflows/go.yml)
+[![Go](https://github.com/guionardo/govuln/actions/workflows/go.yml/badge.svg)](https://github.com/guionardo/govuln/actions/workflows/go.yml)
 
 *A comprehensive vulnerability scanner for Go projects with intelligent caching and submodule support*
 
