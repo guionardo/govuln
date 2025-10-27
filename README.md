@@ -124,7 +124,7 @@ tool"]
 cicd["CI/CD
 pipeline"]
 
-gvn["FBM Fiscal
+gvn["Guionardo
 Go Vulncheck"]
 
 pch --> gvn
@@ -255,7 +255,7 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
 ```bash
 # Clone the repository
 git clone https://github.com/github.com/guionardo/govuln.git
-cd fury_fbm-fiscal-govulncheck
+cd govuln
 
 # Install dependencies
 go mod download
