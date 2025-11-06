@@ -20,3 +20,15 @@ func TestNew(t *testing.T) {
 	pn := cache.GetPackageName(p)
 	assert.Equal(t, "github.com/guionardo/govuln@v0.0.0", pn)
 }
+
+func TestGoCache_GetPackages(t *testing.T) {
+	cache := New()
+	packages := make([]string, 0)
+	assert.NotPanics(t, func() {
+		for meta := range cache.GetPackages("guionardo") {
+			packages = append(packages, meta)
+		}
+
+	})
+
+}
