@@ -23,7 +23,7 @@ var (
 	INTERNAL_OWNER       = sync.OnceValue(func() string {
 		_, owner, _, err := git.ParseGitFromLocalFolder(CURRENT_PATH)
 		if err != nil {
-			panic(fmt.Errorf("error getting internal owner: %v", err))
+			fmt.Printf("error getting internal owner: %v\n", err)
 		}
 		return owner
 	})
